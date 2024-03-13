@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import boto3
 import pika
-from sqlalchemy import create_engine, Column, String, Integer
+from sqlalchemy import create_engine, Column, String, Integer, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import uuid
@@ -59,11 +59,16 @@ channel.queue_declare(queue='songs')
 
 class Song(Base):
     __tablename__ = 'songs'
-    ID = Column(Integer, primary_key=True, autoincrement=True)
-    SongID = Column(String(255))
-    Email = Column(String(255))
-    Status = Column(String(20))
-    SpotifyID = Column(String(255), nullable=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    song_request_id = Column(String(255))
+    email = Column(String(255))
+    status = Column(String(20))
+    spotify_id = Column(String(255), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('song_request_id', name='uq_song_request_id'),
+    )
+
 
 engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=True)
 Base.metadata.create_all(engine)
@@ -71,7 +76,7 @@ Session = sessionmaker(bind=engine)
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    email = request.form['email']
+    user_email = request.form['email']
     desired_file = request.files['file']
 
     # Generate SongID
@@ -88,7 +93,7 @@ def upload_file():
 
     # Add entry to SQL database
     session = Session()
-    new_song = Song(SongID=song_id, Status='pending', Email=email)
+    new_song = Song(song_request_id=song_id, status='pending', email=user_email)
     session.add(new_song)
     session.commit()
     session.close()
