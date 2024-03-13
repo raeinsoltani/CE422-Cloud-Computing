@@ -1,10 +1,13 @@
 from flask import Flask, request, jsonify
+import boto3
 from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import uuid
+import logging
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 
 SQLALCHEMY_USERNAME = 'base-user'
 SQLALCHEMY_PASSWORD = '9!dN$9GA6#ZobYEKFTAER2MK'
@@ -14,12 +17,27 @@ SQLALCHEMY_DATABASE = 'default'
 
 SQLALCHEMY_DATABASE_URI = f"mysql://{SQLALCHEMY_USERNAME}:{SQLALCHEMY_PASSWORD}@{SQLALCHEMY_HOST}:{SQLALCHEMY_PORT}/{SQLALCHEMY_DATABASE}"
 
+S3_ENDPOINT_URL = 'https://shahriar-s3.s3.ir-tbz-sh1.arvanstorage.ir'
+S3_ACCESS_KEY_ID = 'e09e5cf1-2b7b-4bb0-8c4a-0bc5643ca4a3'
+S3_SECRET_ACCESS_KEY = 'b21709d6da82b6023668066c67c593e20d20e1bf223f1e3746a447033014446c'
+S3_BUCKET_NAME = 'songs'
+
 print("Initializing SQLAlchemy")
 
 # Initialize SQLAlchemy
 Base = declarative_base()
 
 print("SQLAlchemy initialized")
+
+try:
+   s3 = boto3.resource(
+       's3',
+       endpoint_url=S3_ENDPOINT_URL,
+       aws_access_key_id= S3_ACCESS_KEY_ID,
+       aws_secret_access_key= S3_SECRET_ACCESS_KEY
+   )
+except Exception as exc:
+   logging.info(exc)
 
 class Song(Base):
     __tablename__ = 'songs'
@@ -38,8 +56,14 @@ def upload_file():
     email = request.form['email']
     desired_file = request.files['file']
 
-    # Generate SongID (this is just a placeholder)
+    # Generate SongID
     song_id = str(uuid.uuid4())
+
+    # Add Song to S3
+    try:
+        s3.Bucket(S3_BUCKET_NAME).upload_fileobj(desired_file, song_id)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
     # Add entry to SQL database
     session = Session()
