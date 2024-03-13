@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import boto3
+import pika
 from sqlalchemy import create_engine, Column, String, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -22,6 +23,12 @@ S3_ACCESS_KEY_ID = 'e09e5cf1-2b7b-4bb0-8c4a-0bc5643ca4a3'
 S3_SECRET_ACCESS_KEY = 'b21709d6da82b6023668066c67c593e20d20e1bf223f1e3746a447033014446c'
 S3_BUCKET_NAME = 'songs'
 
+RABBITMQ_HOST = 'fly-01.rmq.cloudamqp.com'
+RABBITMQ_PORT = '5672'
+RABBITMQ_USERNAME = 'skcomluz'
+RABBITMQ_PASSWORD = '1wUvroILOWyLzVp9WYXxtvoUMfcps1qN'
+RABBITMQ_VHOST = 'skcomluz'
+
 print("Initializing SQLAlchemy")
 
 # Initialize SQLAlchemy
@@ -38,6 +45,17 @@ try:
    )
 except Exception as exc:
    logging.info(exc)
+
+parameters = pika.ConnectionParameters(
+    host=RABBITMQ_HOST,
+    port=RABBITMQ_PORT,
+    virtual_host=RABBITMQ_VHOST,
+    credentials=pika.PlainCredentials(RABBITMQ_USERNAME, RABBITMQ_PASSWORD),
+    socket_timeout=5
+)
+rabbitmq_connection = pika.BlockingConnection(parameters)
+channel = rabbitmq_connection.channel()
+channel.queue_declare(queue='songs')
 
 class Song(Base):
     __tablename__ = 'songs'
@@ -64,6 +82,9 @@ def upload_file():
         s3.Bucket(S3_BUCKET_NAME).upload_fileobj(desired_file, song_id)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+    # Publish song_id to RabbitMQ for further processing
+    channel.basic_publish(exchange='', routing_key='songs', body=song_id)
 
     # Add entry to SQL database
     session = Session()
