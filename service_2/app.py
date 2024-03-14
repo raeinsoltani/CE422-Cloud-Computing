@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, Column, String, Integer, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import sys, os
+from time import sleep
 import logging
 import requests
 logging.basicConfig(level=logging.INFO)
@@ -28,12 +29,29 @@ RABBITMQ_USERNAME = 'skcomluz'
 RABBITMQ_PASSWORD = '1wUvroILOWyLzVp9WYXxtvoUMfcps1qN'
 RABBITMQ_VHOST = 'skcomluz'
 
+LOCAL_DIRECTORY = './temp/'
+
+BLUE = '\033[94m'
+GREEN = '\033[92m'
+RED = '\033[91m'
+RESET = '\033[0m'
+
+MAX_RETRIES = 3
+RETRY_DELAY = 5  # seconds
+REQUEST_TIMEOUT = 50  # seconds
+
+
 shazam_url = "https://shazam-api-free.p.rapidapi.com/shazam/recognize/"
 shazam_headers = {
 	"X-RapidAPI-Key": "2422b29fa3msh1e80dd00b7dce64p1f37d3jsne4495c664901",
 	"X-RapidAPI-Host": "shazam-api-free.p.rapidapi.com"
 }
 
+spotify_url = "https://spotify23.p.rapidapi.com/search/"
+spotify_headers = {
+	"X-RapidAPI-Key": "2422b29fa3msh1e80dd00b7dce64p1f37d3jsne4495c664901",
+	"X-RapidAPI-Host": "spotify23.p.rapidapi.com"
+}
 
 try:
    s3 = boto3.resource(
@@ -45,40 +63,70 @@ try:
 except Exception as exc:
    logging.info(exc)
 
-def dbstatup(song_request_id, status):
+def dbstat(song_request_id, status):
     pass
 
-def spotifyreq(track_name):
-    pass
+def spotifyreq(track_title, song_request_id):
+    querystring = {"q":track_title,"type":"tracks","offset":"0","limit":"10","numberOfTopResults":"5"}
+    
+    retry_count = 0
+    
+    while retry_count < MAX_RETRIES:
+        try:
+            response = requests.get(spotify_url, headers=spotify_headers, params=querystring, timeout=REQUEST_TIMEOUT)
+            if response.status_code == 200:
+                spotify_id = response.json()['tracks']['items'][0]['data']['id']
+                print(f' {GREEN}[s] Spotify ID: {spotify_id}{RESET}')
+                break 
+            else:
+                print(RED + response + RESET)
+                dbstat(song_request_id, 'failed')
+        except Exception as e:
+            print(f'Retry {retry_count + 1}/{MAX_RETRIES}: Error occurred: {e}')
+            retry_count += 1
+            sleep(RETRY_DELAY)
+    else:
+        print(f'Reached maximum retries ({MAX_RETRIES}). Request failed.')
+        dbstat(song_request_id, 'failed')
 
 def shazamreq(song_request_id):
-        local_file_path = f'./temp/{song_request_id}.mp3'
-        files = {'upload_file': open(local_file_path, 'rb')}
-        response = requests.post(shazam_url, files=files, headers=shazam_headers)
-        if response.status_code == 200:
-            pass
-        else:
-            dbstatup(song_request_id, 'failed')
+    local_file_path = f'./temp/{song_request_id}.mp3'
+    files = {'upload_file': open(local_file_path, 'rb')}
+    
+    retry_count = 0
+    
+    while retry_count < MAX_RETRIES:
+        try:
+            response = requests.post(shazam_url, files=files, headers=shazam_headers, timeout=REQUEST_TIMEOUT)
+            if response.status_code == 200:
+                track_title = response.json()['track']['title']
+                print(f' {BLUE}[s] Shazam: {track_title}.{RESET}')
+                spotifyreq(track_title, song_request_id)
+                break 
+            else:
+                print(RED + response + RESET)
+                dbstat(song_request_id, 'failed')
+        except Exception as e:
+            print(f'Retry {retry_count + 1}/{MAX_RETRIES}: Error occurred: {e}')
+            retry_count += 1
+            sleep(RETRY_DELAY)
+    else:
+        print(f'Reached maximum retries ({MAX_RETRIES}). Request failed.')
+        dbstat(song_request_id, 'failed')
 
 
-
-LOCAL_DIRECTORY = './temp/'
 
 def songproc(song_request_id):
     try:
         os.makedirs(LOCAL_DIRECTORY, exist_ok=True)
         local_file_path = os.path.join(LOCAL_DIRECTORY, song_request_id + ".mp3")
-
         s3.Bucket(S3_BUCKET_NAME).download_file(str(song_request_id), local_file_path)
         print(' [*] File downloaded successfully.')
-
-        shazamrequest(song_request_id)
-
+        shazamreq(song_request_id)
 
     except Exception as e:
-        print(e)  # need to handle this later
-
-
+        print(e)
+        dbstat(song_request_id, 'failed')
 
 def main():
     parameters = pika.ConnectionParameters(
@@ -94,7 +142,7 @@ def main():
 
     def callback(ch, method, properties, body):
         print(f" [x] Received {body}")
-        songproccessor(song_request_id= body.decode('utf-8'))
+        songproc(song_request_id= body.decode('utf-8'))
 
     channel.basic_consume(queue='songs', on_message_callback=callback, auto_ack=True)
 
