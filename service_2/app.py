@@ -53,6 +53,28 @@ spotify_headers = {
 	"X-RapidAPI-Host": "spotify23.p.rapidapi.com"
 }
 
+print("Initializing SQLAlchemy")
+# Initialize SQLAlchemy
+Base = declarative_base()
+print("SQLAlchemy initialized")
+
+class Song(Base):
+    __tablename__ = 'songs'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    song_request_id = Column(String(255))
+    email = Column(String(255))
+    status = Column(String(20))
+    spotify_id = Column(String(255), nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint('song_request_id', name='uq_song_request_id'),
+    )
+
+
+engine = create_engine(SQLALCHEMY_DATABASE_URI)
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
+
 try:
    s3 = boto3.resource(
        's3',
@@ -64,7 +86,37 @@ except Exception as exc:
    logging.info(exc)
 
 def dbstat(song_request_id, status):
-    pass
+    session = Session()
+    try:
+        song = session.query(Song).filter_by(song_request_id=song_request_id).first()
+        if song:
+            song.status = status
+            session.commit()
+            print(f" [DB] Updated status of song {song_request_id} to {status}")
+        else:
+            print(f" [DB] Song with ID {song_request_id} not found.")
+    except Exception as e:
+        print(f" [DB] Error occurred while updating status for song {song_request_id}: {e}")
+        session.rollback() 
+    finally:
+        session.close()
+
+def dbidupdate(song_request_id, spotify_id):
+    session = Session()
+    try:
+        song = session.query(Song).filter_by(song_request_id=song_request_id).first()
+        if song:
+            song.spotify_id = spotify_id
+            session.commit()
+            print(f" [DB] Add Spotify id {spotify_id} for song {song_request_id}")
+        else:
+            print(f" [DB] Song with ID {song_request_id} not found.")
+    except Exception as e:
+        print(f" [DB] Error occurred while updating status for song {song_request_id}: {e}")
+        session.rollback() 
+    finally:
+        session.close()
+
 
 def spotifyreq(track_title, song_request_id):
     querystring = {"q":track_title,"type":"tracks","offset":"0","limit":"10","numberOfTopResults":"5"}
@@ -77,6 +129,8 @@ def spotifyreq(track_title, song_request_id):
             if response.status_code == 200:
                 spotify_id = response.json()['tracks']['items'][0]['data']['id']
                 print(f' {GREEN}[s] Spotify ID: {spotify_id}{RESET}')
+                dbidupdate(song_request_id, spotify_id)
+                dbstat(song_request_id, 'ready')
                 break 
             else:
                 print(RED + response + RESET)
