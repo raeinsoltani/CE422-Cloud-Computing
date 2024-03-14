@@ -5,6 +5,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import sys, os
 import logging
+import requests
+logging.basicConfig(level=logging.INFO)
 
 
 SQLALCHEMY_USERNAME = 'base-user'
@@ -26,9 +28,59 @@ RABBITMQ_USERNAME = 'skcomluz'
 RABBITMQ_PASSWORD = '1wUvroILOWyLzVp9WYXxtvoUMfcps1qN'
 RABBITMQ_VHOST = 'skcomluz'
 
+shazam_url = "https://shazam-api-free.p.rapidapi.com/shazam/recognize/"
+shazam_headers = {
+	"X-RapidAPI-Key": "2422b29fa3msh1e80dd00b7dce64p1f37d3jsne4495c664901",
+	"X-RapidAPI-Host": "shazam-api-free.p.rapidapi.com"
+}
+
+
+try:
+   s3 = boto3.resource(
+       's3',
+       endpoint_url=S3_ENDPOINT_URL,
+       aws_access_key_id= S3_ACCESS_KEY_ID,
+       aws_secret_access_key= S3_SECRET_ACCESS_KEY
+   )
+except Exception as exc:
+   logging.info(exc)
+
+def dbstatup(song_request_id, status):
+    pass
+
+def spotifyreq(track_name):
+    pass
+
+def shazamreq(song_request_id):
+        local_file_path = f'./temp/{song_request_id}.mp3'
+        files = {'upload_file': open(local_file_path, 'rb')}
+        response = requests.post(shazam_url, files=files, headers=shazam_headers)
+        if response.status_code == 200:
+            pass
+        else:
+            dbstatup(song_request_id, 'failed')
+
+
+
+LOCAL_DIRECTORY = './temp/'
+
+def songproc(song_request_id):
+    try:
+        os.makedirs(LOCAL_DIRECTORY, exist_ok=True)
+        local_file_path = os.path.join(LOCAL_DIRECTORY, song_request_id + ".mp3")
+
+        s3.Bucket(S3_BUCKET_NAME).download_file(str(song_request_id), local_file_path)
+        print(' [*] File downloaded successfully.')
+
+        shazamrequest(song_request_id)
+
+
+    except Exception as e:
+        print(e)  # need to handle this later
+
+
 
 def main():
-    
     parameters = pika.ConnectionParameters(
         host=RABBITMQ_HOST,
         port=RABBITMQ_PORT,
@@ -42,6 +94,7 @@ def main():
 
     def callback(ch, method, properties, body):
         print(f" [x] Received {body}")
+        songproccessor(song_request_id= body.decode('utf-8'))
 
     channel.basic_consume(queue='songs', on_message_callback=callback, auto_ack=True)
 

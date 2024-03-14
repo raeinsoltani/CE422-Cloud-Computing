@@ -8,7 +8,7 @@ import uuid
 import logging
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 
 SQLALCHEMY_USERNAME = 'base-user'
 SQLALCHEMY_PASSWORD = '9!dN$9GA6#ZobYEKFTAER2MK'
@@ -70,7 +70,7 @@ class Song(Base):
     )
 
 
-engine = create_engine(SQLALCHEMY_DATABASE_URI, echo=True)
+engine = create_engine(SQLALCHEMY_DATABASE_URI)
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
