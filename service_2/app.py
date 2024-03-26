@@ -7,14 +7,14 @@ import sys, os
 from time import sleep
 import logging
 import requests
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
-SQLALCHEMY_USERNAME = 'base-user'
-SQLALCHEMY_PASSWORD = '9!dN$9GA6#ZobYEKFTAER2MK'
-SQLALCHEMY_HOST = '2a599e2f061246909bc828e6bd4c37b3.db.arvandbaas.ir'
-SQLALCHEMY_PORT = '3306'
-SQLALCHEMY_DATABASE = 'default'
+SQLALCHEMY_USERNAME = 'root'
+SQLALCHEMY_PASSWORD = 'sPnKe8MyZzOCAR7uT0Usny0e'
+SQLALCHEMY_HOST = 'everest.liara.cloud'
+SQLALCHEMY_PORT = '31531'
+SQLALCHEMY_DATABASE = 'lucid_sutherland'
 
 SQLALCHEMY_DATABASE_URI = f"mysql://{SQLALCHEMY_USERNAME}:{SQLALCHEMY_PASSWORD}@{SQLALCHEMY_HOST}:{SQLALCHEMY_PORT}/{SQLALCHEMY_DATABASE}"
 
@@ -146,13 +146,14 @@ def spotifyreq(track_title, song_request_id):
 def shazamreq(song_request_id):
     local_file_path = f'./temp/{song_request_id}.mp3'
     files = {'upload_file': open(local_file_path, 'rb')}
-    
     retry_count = 0
     
     while retry_count < MAX_RETRIES:
         try:
             response = requests.post(shazam_url, files=files, headers=shazam_headers, timeout=REQUEST_TIMEOUT)
+            logging.debug(response.json())
             if response.status_code == 200:
+                print(response)
                 track_title = response.json()['track']['title']
                 print(f' {BLUE}[s] Shazam: {track_title}.{RESET}')
                 spotifyreq(track_title, song_request_id)

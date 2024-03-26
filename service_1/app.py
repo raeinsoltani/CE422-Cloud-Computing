@@ -8,13 +8,13 @@ import uuid
 import logging
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.DEBUG)
 
-SQLALCHEMY_USERNAME = 'base-user'
-SQLALCHEMY_PASSWORD = '9!dN$9GA6#ZobYEKFTAER2MK'
-SQLALCHEMY_HOST = '2a599e2f061246909bc828e6bd4c37b3.db.arvandbaas.ir'
-SQLALCHEMY_PORT = '3306'
-SQLALCHEMY_DATABASE = 'default'
+SQLALCHEMY_USERNAME = 'root'
+SQLALCHEMY_PASSWORD = 'sPnKe8MyZzOCAR7uT0Usny0e'
+SQLALCHEMY_HOST = 'everest.liara.cloud'
+SQLALCHEMY_PORT = '31531'
+SQLALCHEMY_DATABASE = 'lucid_sutherland'
 
 SQLALCHEMY_DATABASE_URI = f"mysql://{SQLALCHEMY_USERNAME}:{SQLALCHEMY_PASSWORD}@{SQLALCHEMY_HOST}:{SQLALCHEMY_PORT}/{SQLALCHEMY_DATABASE}"
 
