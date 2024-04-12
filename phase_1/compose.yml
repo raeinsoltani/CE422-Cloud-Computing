@@ -1,0 +1,31 @@
+services:
+  elasticsearch:
+    container_name: elasticsearch
+    image: elasticsearch:8.12.2
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ports:
+      - 9200:9200
+    volumes:
+      - ./data:/usr/share/elasticsearch/data
+  
+  kibana:
+    container_name: kibana
+    image: kibana:8.12.2
+    ports:
+      - 5601:5601
+
+  redis:
+    container_name: redis
+    image: redis:7.2.4
+    ports:
+      - 6379:6379
+    command: ["redis-server", "--bind", "redis", "--port", "6379"]
+
+  backend:
+    container_name: backend
+    build: ./api
+    ports:
+      - 5000:5000
+    
