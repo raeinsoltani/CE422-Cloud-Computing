@@ -1,0 +1,18 @@
+FROM ubuntu:latest
+
+RUN apt update && \
+    apt install openssh-server -y && \
+    mkdir /var/run/sshd 
+
+# Set password for root
+RUN echo 'root:root' | chpasswd
+
+# Add password authentication for ssh
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# Install oh-my-zsh (just because I can)
+RUN apt install curl git zsh -y && \
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" && \
+    sed -i 's#/root:/bin/bash#/root:/bin/zsh#' /etc/passwd
+
+CMD ["/usr/sbin/sshd", "-D"]
