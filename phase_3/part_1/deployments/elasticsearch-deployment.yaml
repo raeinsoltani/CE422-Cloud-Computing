@@ -16,6 +16,9 @@ spec:
     spec:
       containers:
       - name: elasticsearch
-        image: redis:7.2.4
+        image: elasticsearch:8.12.2
         ports: 
-        - containerPort: elasticsearch:8.12.2
+        - containerPort: 9200
+        envFrom:
+        - configMapRef:
+            name: elasticsearch-configmap

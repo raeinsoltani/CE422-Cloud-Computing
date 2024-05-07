@@ -19,3 +19,6 @@ spec:
         image: rasoltani/cc_hw2_api:v1-release
         ports: 
         - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: apiserver-configmap
