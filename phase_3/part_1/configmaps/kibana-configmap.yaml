@@ -4,5 +4,5 @@ metadata:
   name: kibana-configmap
 data:
   kibana.yml: |
-    server.host: "0.0.0.0"
+    server.host: "0"
     elasticsearch.hosts: ["http://elasticsearch-service:9200"]

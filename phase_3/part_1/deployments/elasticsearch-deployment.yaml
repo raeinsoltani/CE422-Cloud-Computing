@@ -22,3 +22,10 @@ spec:
         envFrom:
         - configMapRef:
             name: elasticsearch-configmap
+        volumeMounts:
+        - name: elasticsearch-data
+          mountPath: /usr/share/elasticsearch/data
+      volumes:
+      - name: elasticsearch-data
+        persistentVolumeClaim:
+          claimName: elasticsearch-pvc
