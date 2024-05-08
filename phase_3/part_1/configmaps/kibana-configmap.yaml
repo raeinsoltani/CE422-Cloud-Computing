@@ -6,3 +6,5 @@ data:
   kibana.yml: |
     server.host: "0"
     elasticsearch.hosts: ["http://elasticsearch-service:9200"]
+    elasticsearch.username: "kibana_system"
+    elasticsearch.password: "CHoVkMA+LLqeGyMm1qz0"

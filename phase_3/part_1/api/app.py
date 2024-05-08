@@ -15,9 +15,12 @@ REDIS_PORT = os.getenv('REDIS_PORT', '6379')
 
 ELASTICSEARCH_HOST = os.getenv('ELASTICSEARCH_HOST', 'elasticsearch')
 ELASTICSEARCH_PORT = os.getenv('ELASTICSEARCH_PORT', '9200')
+ELASTICSEARCH_USER = os.getenv('ELASTICSEARCH_USER', 'elastic')
+ELASTICSEARCH_PASS = os.getenv('ELASTICSEARCH_PASS')
+
 
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
-elk = Elasticsearch(f"http://{ELASTICSEARCH_HOST}:{ELASTICSEARCH_PORT}")
+elk = Elasticsearch(f"http://{ELASTICSEARCH_USER}:{ELASTICSEARCH_PASS}@{ELASTICSEARCH_HOST}:{ELASTICSEARCH_PORT}")
 
 
 imdb_url = "https://imdb146.p.rapidapi.com/v1/find/"
