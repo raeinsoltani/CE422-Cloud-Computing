@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: apiserver
-        image: rasoltani/cc_hw2_api:v2-release
+        image: rasoltani/cc_hw2_api:v2.1-release
         ports: 
         - containerPort: 5000
         envFrom:
