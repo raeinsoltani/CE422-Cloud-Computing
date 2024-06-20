@@ -27,9 +27,6 @@ ARG scala_version="2.12.10"
 ARG jupyterlab_version="3.0.0"
 ARG scala_kernel_version="0.10.9"
 
-#JupyterLab + Python kernel for PySpark
-COPY workspace/ /workspace/
-
 RUN apt-get update -y
 RUN apt-get install -y python3-pip python3-dev
 RUN pip3 install --upgrade pip
@@ -50,6 +47,9 @@ RUN pip3 install pandas
 # RUN curl https://archive.apache.org/dist/spark/spark-${spark_version}/SparkR_${spark_version}.tar.gz -k -o sparkr.tar.gz
 # RUN R CMD INSTALL sparkr.tar.gz
 # RUN rm -f sparkr.tar.gz
+
+#JupyterLab + Python kernel for PySpark
+COPY workspace/ /workspace/
 
 EXPOSE 8888
 
