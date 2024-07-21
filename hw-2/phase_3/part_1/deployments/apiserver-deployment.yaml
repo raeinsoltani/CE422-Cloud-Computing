@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apiserver-deployment
+  labels: 
+    app: apiserver
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: apiserver
+  template:
+    metadata:
+      labels:
+        app: apiserver
+    spec:
+      containers:
+      - name: apiserver
+        image: rasoltani/cc_hw2_api:v2.1-release
+        ports: 
+        - containerPort: 5000
+        envFrom:
+        - configMapRef:
+            name: apiserver-configmap

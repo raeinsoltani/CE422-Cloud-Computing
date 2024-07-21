@@ -1,0 +1,4 @@
+Flask==2.2.5
+Elasticsearch==7.17.6
+Redis==4.3.4
+Requests==2.31.0

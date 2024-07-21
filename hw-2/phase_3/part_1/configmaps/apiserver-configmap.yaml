@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apiserver-configmap
+data:
+  REDIS_HOST: redis-service
+  REDIS_PORT: "6379"
+  ELASTICSEARCH_HOST: elasticsearch-service
+  ELASTICSEARCH_PORT: "9200"
+  ELASTICSEARCH_USER: "elastic"
+  ELASTICSEARCH_PASS: "8OXiMoH5X=dQz_8wDFM8"
